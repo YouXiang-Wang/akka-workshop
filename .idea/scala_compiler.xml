@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="akka-workshop" />
+    <profile name="sbt 1" modules="akka-workshop">
+      <option name="uncheckedWarnings" value="true" />
+      <option name="featureWarnings" value="true" />
+      <parameters>
+        <parameter value="-target:jvm-1.8" />
+        <parameter value="-language:_" />
+        <parameter value="-encoding" />
+        <parameter value="utf8" />
+        <parameter value="-Xlint:-missing-interpolator" />
+        <parameter value="-Ypatmat-exhaust-depth" />
+        <parameter value="40" />
+        <parameter value="-opt:l:inline" />
+        <parameter value="-opt-inline-from:**" />
+      </parameters>
+    </profile>
   </component>
 </project>

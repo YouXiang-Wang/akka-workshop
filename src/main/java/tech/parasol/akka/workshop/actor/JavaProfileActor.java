@@ -3,22 +3,17 @@ package tech.parasol.akka.workshop.actor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedAbstractActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.parasol.akka.workshop.model.User;
-
-import java.io.Serializable;
 
 
-public class ProfileActor extends UntypedAbstractActor {
+public class JavaProfileActor extends UntypedAbstractActor {
 
     Logger logger = LoggerFactory.getLogger(this.getClass().getName());
 
 
     static public Props props() {
-        return Props.create(ProfileActor.class, ProfileActor::new);
+        return Props.create(JavaProfileActor.class, JavaProfileActor::new);
     }
 
 

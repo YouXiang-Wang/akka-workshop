@@ -1,4 +1,4 @@
-package tech.parasol.akka.workshop.part1.actor;
+package tech.parasol.akka.workshop.actor;
 
 
 import akka.actor.AbstractActor;

@@ -1,5 +1,3 @@
 package tech.parasol.akka.workshop.cluster
 
-class CommandEnvelop {
-
-}
+final case class CommandEnvelop(id: String, payload: Any)

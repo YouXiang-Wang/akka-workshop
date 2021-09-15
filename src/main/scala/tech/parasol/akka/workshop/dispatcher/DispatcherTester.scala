@@ -1,8 +1,8 @@
 package tech.parasol.akka.workshop.dispatcher
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.util.Timeout
 import akka.pattern.ask
+import akka.util.Timeout
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -60,18 +60,18 @@ class ControlActor(dispatcher: String) extends Actor {
   }
 }
 
-object Master {
+object DispatcherTester {
   def main(args: Array[String]): Unit = {
-    val system = ActorSystem("DataInitializer")
+    val system = ActorSystem("DispatcherTester")
 
     /**
      *
      * val dispatcher = "executor.writer-dispatcher"
      * val dispatcher = "executor.pinned-writer-dispatcher"
-     *
+     * val dispatcher = "forkjoin-writer-dispatcher"
      */
 
-    val dispatcher = "executor.pinned-writer-dispatcher"
+    val dispatcher = "executor.forkjoin-writer-dispatcher"
     val actor = system.actorOf(Props(classOf[ControlActor], dispatcher), "controller")
 
     actor ! StartCommand(100)

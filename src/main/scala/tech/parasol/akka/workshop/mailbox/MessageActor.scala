@@ -3,24 +3,39 @@ package tech.parasol.akka.workshop.mailbox
 import akka.actor.Actor
 import org.slf4j.LoggerFactory
 
+final case class MyException(msg: String) extends Exception(msg)
 
-
-class SequenceActor extends Actor {
+class MessageActor extends Actor {
 
   val logger = LoggerFactory.getLogger(this.getClass.getName)
 
+  var actorPathName: String = _
+
   override def preStart(): Unit = {
-    logger.info("UserActor start ===> " + self)
+    logger.info("MessageActor start ===> " + self)
+    actorPathName = self.path.name
+  }
+
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    logger.info("MessageActor preRestart, path = " + self.path + ", object hash = " + this.hashCode)
+    super.preRestart(reason, message)
   }
 
 
   def receive = {
-
-    case msg: String => {
-      logger.info("processing message ===> " + msg)
+    case "Sleep" => {
+      logger.info("processing message ===> Sleep")
       Thread.sleep(5000)
     }
 
+    case "Exception" => {
+      throw MyException("Try throw exception.")
+    }
+    case msg: String => {
+      logger.info(s"[$actorPathName] is processing message ===> " + msg)
+
+    }
     case _ => {
       println(s"Unknown message")
     }

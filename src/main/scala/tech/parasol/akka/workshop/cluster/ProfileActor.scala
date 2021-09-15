@@ -1,8 +1,8 @@
 package tech.parasol.akka.workshop.cluster
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.Actor
 import org.slf4j.LoggerFactory
-import tech.parasol.akka.workshop.cluster.ProfileAction.{AddShare, GetShare, RemoveShare}
+import tech.parasol.akka.workshop.cluster.ProfileAction.{AddShare, GetProfile, GetShare, RemoveShare}
 
 import scala.util.{Failure, Success, Try}
 
@@ -14,6 +14,8 @@ class ProfileActor extends Actor {
   private var profileId = ""
 
   private var sharedList: Map[String, SharedInfo] = Map.empty[String, SharedInfo]
+  private var userList: Map[String, User] = Map.empty[String, User]
+
 
   override def preStart(): Unit = {
     logger.info("ProfileActor start ===> " + self)
@@ -34,6 +36,7 @@ class ProfileActor extends Actor {
 
     case user@User(userId, userName) => {
       logger.info(s"Add user: userId = ${userId}, userName = ${userName}")
+      userList += user.userId -> user
       sender ! user
     }
 
@@ -61,6 +64,15 @@ class ProfileActor extends Actor {
           caller ! false
         }
       }
+    }
+
+    case GetProfile(profileId) => {
+      val profile = ProfileInfo(
+        profileId,
+        userList.toSeq.map(_._2),
+        sharedList.toSeq.map(_._2)
+      )
+      sender ! profile
     }
 
     case GetShare(_) => {

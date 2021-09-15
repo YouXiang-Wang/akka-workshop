@@ -12,12 +12,12 @@ import static akka.pattern.Patterns.ask;
 
 public class MailboxAndDispatcher {
 
-    public static ActorSystem system = ActorSystem.create("HelloAkka");
+    public static ActorSystem system = ActorSystem.create("MailboxAndDispatcher");
     static final Duration t = Duration.ofSeconds(5);
 
     public static ActorRef createActor() {
         final ActorRef greeterActor =
-                system.actorOf(GreeterActor.props(), "greeterActor");
+                system.actorOf(GreeterActor.props().withDispatcher("custom-dispatcher"), "greeterActor");
         return greeterActor;
     }
 
@@ -45,49 +45,14 @@ public class MailboxAndDispatcher {
     }
 
 
-    public static void askMessage2(ActorRef actorRef, Object message) {
-        CompletableFuture<Object> future2 = ask(actorRef, message, t).toCompletableFuture();
-        CompletableFuture<Object> future1 = ask(actorRef, message, t).toCompletableFuture();
-        CompletableFuture<String> transformed =
-                CompletableFuture.allOf(future1, future2)
-                        .thenApply(
-                                v -> {
-                                    String x = (String) future1.join();
-                                    String s = (String) future2.join();
-                                    return x + ":" +  s;
-                                });
-
-        try {
-            String res = transformed.get();
-            System.out.println("Result ===> " + res);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public static void main(String[] args) {
 
-        /**
-         * Termination hook
-         */
-
-        system.registerOnTermination(() -> System.out.println("Termination"));
-
-        /**
-         *
-         * ActorRef supervisingActor = system.actorOf(SupervisingActor.props(), "supervising-actor");
-         * supervisingActor.tell("failChild", ActorRef.noSender());
-         *
-         */
-
         final ActorRef greeterActor = createActor();
-
         tellMessage(greeterActor, GreeterActor.Msg.WORKING);
         askMessage(greeterActor, "Greeting");
-        askMessage2(greeterActor, "another request");
 
         tellMessage(greeterActor, new GreeterActor.Greeting("wang"));
-
 
         final ActorSelection selection = system.actorSelection("/user/greeterActor");
         tellMessage(selection, GreeterActor.Msg.WORKING);
