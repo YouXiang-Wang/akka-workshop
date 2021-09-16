@@ -62,7 +62,9 @@ class ControlActor(dispatcher: String) extends Actor {
 
 object DispatcherTester {
   def main(args: Array[String]): Unit = {
-    val system = ActorSystem("DispatcherTester")
+    val system: ActorSystem = ActorSystem("DispatcherTester")
+
+    println("Core size = " + Runtime.getRuntime.availableProcessors())
 
     /**
      *
@@ -71,6 +73,8 @@ object DispatcherTester {
      * val dispatcher = "forkjoin-writer-dispatcher"
      */
 
+    //val dispatcher = "executor.writer-dispatcher"
+    //val dispatcher = "executor.pinned-writer-dispatcher"
     val dispatcher = "executor.forkjoin-writer-dispatcher"
     val actor = system.actorOf(Props(classOf[ControlActor], dispatcher), "controller")
 

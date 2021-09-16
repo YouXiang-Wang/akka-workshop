@@ -42,7 +42,7 @@ public class GreeterActor extends AbstractActor {
     }
 
     public GreeterActor(String name) {
-        System.out.println("name ===> " + name);
+        //System.out.println("name ===> " + name);
         this.name = name;
     }
 

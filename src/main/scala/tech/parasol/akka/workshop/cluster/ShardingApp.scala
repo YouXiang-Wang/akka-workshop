@@ -1,12 +1,13 @@
 package tech.parasol.akka.workshop.cluster
 
 
-import akka.actor.{ActorSystem, CoordinatedShutdown}
+import akka.actor.{ActorSystem, CoordinatedShutdown, Props}
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 import akka.management.scaladsl.AkkaManagement
+import kamon.Kamon
 import tech.parasol.akka.workshop.route.Route
 import tech.parasol.akka.workshop.utils.CommonUtils
 
@@ -57,6 +58,7 @@ object ShardingApp extends Route {
     logger.info(s"ShardingApp starts up at ${bind}")
     Application.shardingRegion = ShardingHelper.startShardingRegion(system, "user")
     Application.profileShardingRegion = ShardingHelper.startProfileShardingRegion(system, "profile")
+    system.actorOf(Props(classOf[ClusterMetricsActor]), "clusterMetricsActor")
     CoordinatedShutdown(system).addJvmShutdownHook {
       logger.info(s"[ShardingApp] shutdown at ${System.currentTimeMillis()}")
     }
@@ -85,6 +87,7 @@ object ShardingApp extends Route {
    */
 
   def main(args: Array[String]): Unit = {
+    Kamon.init()
     startCluster
   }
 

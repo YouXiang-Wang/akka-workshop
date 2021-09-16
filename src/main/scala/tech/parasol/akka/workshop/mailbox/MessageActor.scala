@@ -33,6 +33,7 @@ class MessageActor extends Actor {
       throw MyException("Try throw exception.")
     }
     case msg: String => {
+      //if(actorPathName == "$a" || actorPathName == "$b") Thread.sleep(5000)
       logger.info(s"[$actorPathName] is processing message ===> " + msg)
 
     }

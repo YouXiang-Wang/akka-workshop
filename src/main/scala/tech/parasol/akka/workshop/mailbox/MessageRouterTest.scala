@@ -1,5 +1,6 @@
 package tech.parasol.akka.workshop.mailbox
 
+import akka.actor.SupervisorStrategy.{Restart, Resume, Stop}
 import akka.actor.{ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
 import akka.routing._
 import tech.parasol.akka.workshop.utils.CommonUtils
@@ -9,17 +10,22 @@ object MessageRouterTest {
   val system = ActorSystem("MessageRouterTest")
 
   val strategy = OneForOneStrategy() {
-    case _: Exception => {
-      println("----------------")
+    case _: ArithmeticException      => Resume
+    case _: NullPointerException     => Restart
+    case _: IllegalArgumentException => Stop
+    case e: MyException => {
+      println("MyException ===> " + e.getMessage)
+      SupervisorStrategy.Resume
+    }
+    case e: Exception => {
+      println("Exception ===> " + e.getMessage)
       SupervisorStrategy.Resume
     }
     case _            => SupervisorStrategy.Escalate
   }
 
 
-  //Props.create(classOf[MessageActor]).withRouter(new SmallestMailboxPool(50000))
-
-  def poolRouter(mode: Int = 1) = {
+  def poolRouter(mode: Int = 1): ActorRef = {
 
     val router = mode match {
       case 0 => {
@@ -118,18 +124,28 @@ object MessageRouterTest {
   }
 
 
+  def testSmallestMailboxPool = {
+    val actorRef = poolRouter(3)
+    tellMessage(actorRef, 100)
+  }
+
+  def testSupervision = {
+    val actorRef = poolRouter(1)
+    actorRef ! "Exception"
+    actorRef ! "Exception"
+    actorRef ! "Resume"
+
+
+  }
 
   def main(args: Array[String]): Unit = {
-    val actorRef = poolRouter(1)
 
-    actorRef ! "Exception"
-    // tell
-    //tellMessage(actorRef, 100)
+    //testSmallestMailboxPool
+
+    testSupervision
 
     //broadcast
     //broadcast(actorRef)
-
-
 
   }
 
