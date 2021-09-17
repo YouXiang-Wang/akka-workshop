@@ -2,9 +2,9 @@ package tech.parasol.akka.workshop.stream
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.FlowShape
+import akka.stream.{FlowShape, OverflowStrategy}
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Merge, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Sink, Source}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 
@@ -51,9 +51,9 @@ object StreamApp {
       val outStage = builder.add(flow4)
 
       inStage ~> flow1 ~> broadcast.in
-      broadcast ~> flow2 ~> merge
-      broadcast ~> flow3 ~> merge
-      merge ~> outStage
+                                      broadcast ~> flow2 ~> merge
+                                      broadcast ~> flow3 ~> merge
+                                                                   merge ~> outStage
       FlowShape(inStage.in, outStage.out)
     })
 
@@ -72,6 +72,7 @@ object StreamApp {
     resFut.map(res => {
       println("res ===> " + res)
     })
+
   }
 
   def testOneByOne = {

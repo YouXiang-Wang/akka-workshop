@@ -3,7 +3,7 @@ package tech.parasol.akka.workshop.stream
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 
 object ParallelismStream {
@@ -19,11 +19,15 @@ object ParallelismStream {
   }
 
 
+  val parallelism = 1
+
   def test1 = {
     val start = System.currentTimeMillis()
     Source(1 to 1000)
-      .map(spin)
-      .map(spin)
+      .mapAsync(parallelism) {x => Future(spin(x))}
+      //.map(spin)
+      //.map(spin)
+      .mapAsync(parallelism) {x => Future(spin(x))}
       .runWith(Sink.ignore)
       .onComplete(_ => {
         println("Consuming ===> " + (System.currentTimeMillis() - start))
@@ -34,9 +38,11 @@ object ParallelismStream {
   def test2 = {
     val start = System.currentTimeMillis()
     Source(1 to 1000)
-      .map(spin)
+      //.map(spin)
+      .mapAsync(parallelism) {x => Future(spin(x))}
       .async
-      .map(spin)
+      //.map(spin)
+      .mapAsync(parallelism) {x => Future(spin(x))}
       .runWith(Sink.ignore)
       .onComplete(_ => {
         println("Consuming ===> " + (System.currentTimeMillis() - start))
@@ -45,7 +51,7 @@ object ParallelismStream {
   }
 
   def main(args: Array[String]): Unit = {
-
-    test2
+    //test1
+    test1
   }
 }

@@ -85,7 +85,7 @@ class MessageProcessor(
       data.profileId,
       Option(data)
     )
-    Seq(activity, activity)
+    Seq(activity)
   }
 
   val consumerSettings = {

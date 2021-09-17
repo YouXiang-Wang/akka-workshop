@@ -54,7 +54,7 @@ object KafkaSender {
 
     val message = """{"taskId":"111111","profileId":"profile_1"}"""
 
-    Source(1 to 2)
+    Source(1 to 1000)
       .throttle(1, 2.seconds)
       .runForeach(_ => producerQueue.offer(message))
       .onComplete(_ => system.terminate())

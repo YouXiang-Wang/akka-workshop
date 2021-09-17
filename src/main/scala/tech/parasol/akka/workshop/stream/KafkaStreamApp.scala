@@ -11,7 +11,6 @@ object KafkaStreamApp {
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
 
-
   def start = {
 
     val kafkaNodes = "127.0.0.1:9092"
@@ -38,7 +37,7 @@ object KafkaStreamApp {
       topic = failedTopic
     )
 
-    val processor = new MessageProcessor(dataInConfig, dataOutConfig, failedDataConfig)
+    new MessageProcessor(dataInConfig, dataOutConfig, failedDataConfig)
 
   }
 
