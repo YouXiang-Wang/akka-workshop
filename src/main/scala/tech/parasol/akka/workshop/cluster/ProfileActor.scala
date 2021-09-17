@@ -14,6 +14,9 @@ class ProfileActor extends Actor {
   private var profileId = ""
 
   private var sharedList: Map[String, SharedInfo] = Map.empty[String, SharedInfo]
+
+
+
   private var userList: Map[String, User] = Map.empty[String, User]
 
 
@@ -24,6 +27,13 @@ class ProfileActor extends Actor {
     /**
      * add some logic to load data from the persistent
      * Event Source
+     * ES -> CASSANDRA
+     * CQRS
+     * CUD COMMAMD STAFUL ACTOR
+     * R Q STATELESS ACTOR -> ROUTER POOL ROUTER GROUP ->
+     * DDD
+     *
+     *
      */
   }
 
@@ -44,6 +54,14 @@ class ProfileActor extends Actor {
       val caller = sender()
       Try {
         sharedList += share.shareId -> share
+
+
+        /**
+         * SAVE Elastic
+         *
+         * send kafka pulsar
+         *
+         */
       } match {
         case Success(_) => caller ! true
         case Failure(e) => {

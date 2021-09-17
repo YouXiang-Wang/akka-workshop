@@ -39,3 +39,12 @@ object ProfileAction {
 
 
 
+final case class SyncTaskMessage(taskId: String,
+                                 profileId: String
+                         )
+
+final case class Activity(activityId: String,
+                          profileInfo: Option[ProfileInfo] = None
+                         )
+
+
