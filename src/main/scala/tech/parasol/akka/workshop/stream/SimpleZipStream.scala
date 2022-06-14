@@ -30,6 +30,12 @@ object SimpleZipStream {
   }
 
 
+  /**
+   *
+   * mapAsyncUnordered
+   * mapAsync
+   *
+   */
   val svcFlow1Async: Flow[Int, String, NotUsed] = Flow[Int].mapAsyncUnordered(100)(i => Future {
     if(i % 2 == 0) {
       logger.info(s"i = ${i}")

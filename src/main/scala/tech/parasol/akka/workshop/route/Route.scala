@@ -3,6 +3,7 @@ package tech.parasol.akka.workshop.route
 
 import akka.actor.ActorSystem
 import akka.cluster.pubsub.DistributedPubSub
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
@@ -91,7 +92,13 @@ trait Route {
     }
   }}
 
+  val bulk = path("_bulk") { {
+    post {
+      complete(StatusCodes.TooManyRequests)
+    }
+  }}
 
-  val router = welcome ~ user ~ profile ~ addShare ~ getProfile
+
+  val router = welcome ~ user ~ profile ~ addShare ~ getProfile ~ bulk
 
 }

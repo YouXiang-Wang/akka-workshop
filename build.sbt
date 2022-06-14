@@ -5,7 +5,7 @@ version := "0.1"
 scalaVersion := "2.12.6"
 
 
-lazy val akkaVersion = "2.6.6"
+lazy val akkaVersion = "2.6.18"
 lazy val akkaHttpVersion = "10.1.11"
 lazy val alpakkaVersion = "1.1.0"
 lazy val parasolVersion = "0.2.0-SNAPSHOT"
@@ -19,6 +19,10 @@ lazy val jnaVersion = "5.8.0"
 lazy val micrometerVersion = "1.7.2"
 lazy val prometheusVersion = "0.11.0"
 lazy val jmesPathVersion = "0.5.0"
+lazy val jacksonModuleScala = "2.13.0"
+lazy val mysqlConnectorVersion = "6.0.6"
+
+lazy val circeVersion = "0.14.1"
 
 lazy val reflectASM = "com.esotericsoftware" % "reflectasm" % "1.11.3"
 
@@ -74,6 +78,15 @@ val jmesPath = Seq(
   "io.burt" % "jmespath-jackson" % jmesPathVersion
 )
 
+val mysqlConnector = Seq(
+  "mysql"                                      % "mysql-connector-java"          % mysqlConnectorVersion
+)
+
+val circe = Seq(
+  "io.circe" %% "circe-core",
+  "io.circe" %% "circe-generic",
+  "io.circe" %% "circe-parser"
+).map(_ % circeVersion)
 
 val jna = Seq(
   "net.java.dev.jna" % "jna" % jnaVersion
@@ -98,7 +111,7 @@ val kontainers = Seq(
   "io.prometheus" % "simpleclient_common" % prometheusVersion
 )
 
-libraryDependencies ++= akkaManagement ++ jmesPath ++ kontainers ++ kamon ++ jna ++ Seq(
+libraryDependencies ++= akkaManagement ++ circe ++ jmesPath ++ kontainers ++ mysqlConnector ++ kamon ++ jna ++ Seq(
   "com.typesafe.akka"                         %% "akka-actor"                    % akkaVersion,
   //"com.typesafe.akka"                         %% "akka-actor-typed"                    % akkaVersion,
   "com.typesafe.akka"                         %% "akka-stream"                   % akkaVersion,
@@ -111,11 +124,10 @@ libraryDependencies ++= akkaManagement ++ jmesPath ++ kontainers ++ kamon ++ jna
   "com.typesafe.akka"                         %% "akka-persistence-query"        % akkaVersion,
   "com.typesafe.akka"                         %% "akka-discovery"                % akkaVersion,
   "com.typesafe.akka"                         %% "akka-stream-testkit"           % akkaVersion,
-  "com.typesafe.akka"                        %% "akka-actor-testkit"             % akkaVersion,
   "ch.qos.logback"                             % "logback-classic"               % "1.2.3",
   "com.typesafe.play"                         %% "play-json"                     % "2.6.4",
   "ai.x"                                      %% "play-json-extensions"          % "0.10.0",
-  "com.fasterxml.jackson.module"              %% "jackson-module-scala"          % "2.11.1",
+  "com.fasterxml.jackson.module"              %% "jackson-module-scala"          % jacksonModuleScala, //"2.11.1"
   "ch.megard"                                 %% "akka-http-cors"                % "0.4.2",
   "com.typesafe.akka"                         %% "akka-http-core"                % akkaHttpVersion,
   "com.typesafe.akka"                         %% "akka-http-jackson"             % akkaHttpVersion,
@@ -125,6 +137,8 @@ libraryDependencies ++= akkaManagement ++ jmesPath ++ kontainers ++ kamon ++ jna
   "net.debasishg" %% "redisclient" % "3.30",
   "com.twitter" %% "chill" % "0.9.4",
   "com.twitter" %% "chill-akka" % "0.9.4",
+  "org.iq80.leveldb"            % "leveldb"          % "0.7",
+  "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8",
   "com.github.blemale" %% "scaffeine" % "3.1.0" % "compile",
   "org.scalatest" %% "scalatest" % "3.2.9" % Test
 )

@@ -4,9 +4,11 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.{FlowShape, OverflowStrategy}
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Sink, Source}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Sink, Source, SourceQueueWithComplete}
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
+
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 object StreamApp {
 
@@ -79,10 +81,92 @@ object StreamApp {
     Source(1 to 10).map(x => testSingle(x)).runWith(Sink.ignore)
   }
 
+  def testSink = {
+    //val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold("")((l, a) => l + a))(Keep.right)
+    val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold(Seq.empty[String])((l, a) => l :+ a))(Keep.right)
+
+    val (queue, future): (SourceQueueWithComplete[Int], Future[Seq[String]]) =
+      Source.queue(3, OverflowStrategy.backpressure)
+        .toMat(sinkUnderTest)(Keep.both).run()
+
+    val seq = (1 to 100).toList.toSeq
+    /*
+    Future.sequence(Seq(
+      queue.offer(1),
+      queue.offer(2),
+      queue.offer(3),
+      queue.offer(4)
+    ))
+
+
+     */
+
+    val count = 100
+    (1 to count).map(x => queue.offer(x))
+
+    /*
+    queue.offer(1)
+    queue.offer(2)
+    queue.offer(3)
+    queue.offer(4)
+
+    val result = Await.result(future, 10.seconds)
+    println(result)
+
+     */
+
+
+
+    //future.map(r => println("result ===> " + r.mkString(",")))
+
+    queue.complete()
+
+
+    Thread.sleep(1000)
+
+    Source
+      .future(future)
+      .map(s => {
+      println("s ===> " + s.mkString(","))
+    }).runWith(Sink.ignore)
+
+
+  }
+
+
+
+
+  def testSinkGroup = {
+
+    val sinkUnderTest = Flow[(String, Int)].toMat(Sink.fold(Seq.empty[(String, Int)])((l, a) => l :+ a))(Keep.right)
+
+    val (queue, future): (SourceQueueWithComplete[(String, Int)], Future[Seq[(String, Int)]]) =
+      Source.queue(3, OverflowStrategy.backpressure)
+        .toMat(sinkUnderTest)(Keep.both).run()
+
+
+    val count = 100
+
+    val cate = Seq("W1", "W2", "W3")
+
+    (1 to count)
+      .map(x => queue.offer( (cate(x % 3), x)))
+
+
+    queue.complete()
+
+
+    Source.future(future).map(s => s)
+
+
+  }
+
+
   def main(args: Array[String]): Unit = {
 
     //streamBroadcastMerge
-    testOneByOne
+    //testOneByOne
+    testSink
 
 
   }

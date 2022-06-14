@@ -1,6 +1,9 @@
 package tech.parasol.akka.workshop.cluster
 
+import io.circe.generic.JsonCodec
+
 import scala.beans.BeanProperty
+
 
 final case class User(
                      @BeanProperty
@@ -8,6 +11,9 @@ final case class User(
                      @BeanProperty
                        userName: String
                      )
+
+
+
 
 
 
