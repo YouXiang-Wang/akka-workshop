@@ -1,5 +1,7 @@
 package tech.parasol.akka.workshop.cluster
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonInclude}
 import io.circe.generic.JsonCodec
 
 import scala.beans.BeanProperty
@@ -54,3 +56,6 @@ final case class Activity(activityId: String,
                          )
 
 
+
+
+final case class RawData(id: String, data: String)

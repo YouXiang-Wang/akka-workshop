@@ -2,31 +2,25 @@ package tech.parasol.akka.workshop.stream
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ActorAttributes, ActorMaterializer, OverflowStrategy, QueueOfferResult}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete, TcpIdleTimeoutException}
+import akka.stream._
 import org.slf4j.LoggerFactory
-import tech.parasol.akka.workshop.cluster.RawData
 import tech.parasol.akka.workshop.http.{ApiError, HttpClient, HttpUtils}
-import tech.parasol.akka.workshop.model.{Category, Item, ResponseResult, UserProfile, UserPurchase}
+import tech.parasol.akka.workshop.model._
+import tech.parasol.akka.workshop.stream.StreamIteratorFlatMapConcatTest.logger
 import tech.parasol.akka.workshop.utils.{DefaultExceptionDecider, StreamHelper}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
-object StreamConcat {
+class OrderQueryExecutor(httpClient: HttpClient, userProfile: UserProfile, category: Category)
+                               (implicit materializer: Materializer, executionContext: ExecutionContextExecutor) {
+  var _order: Int = 0
+  var _cate = category
 
-  implicit val system = ActorSystem("StreamConcat")
-  implicit val materializer = ActorMaterializer()
-  implicit val ex = system.getDispatcher
-
-  lazy val httpClient = HttpClient(system)
-  implicit val logger = LoggerFactory.getLogger(this.getClass.getName)
-
-  val parallelism: Int = 4
-
-
-  def getData(url: String, rawData: RawData) = {
-    val request = HttpUtils.buildRequest[RawData](url, "POST", Option(rawData))
-    httpClient.asyncT[ResponseResult[Seq[RawData]]](request, true).map(r => r match {
+  private def getPurchaseData(category: Category) = {
+    val url = s"http://127.0.0.1:18090/purchaseOrder/${category.id}"
+    val request = HttpUtils.buildRequest[Category](url, "POST", Option(category))
+    httpClient.asyncT[ResponseResult[Seq[Item]]](request, true).map(r => r match {
       case Right(v) => {
         if (v.data.isDefined)
           Right(v.data.get)
@@ -38,8 +32,13 @@ object StreamConcat {
         Left(error)
       }
     }) recover {
+      case e: TcpIdleTimeoutException => {
+        logger.error("TcpIdleTimeoutException ===> ", e)
+        val error = ApiError("RestApiError", Option(e.getMessage))
+        Left(error)
+      }
       case e: Exception => {
-        logger.error("fetchResourceTypesException ===> ", e)
+        logger.error("OrderQueryExecutorFetchResourceTypesException ===> ", e)
         val error = ApiError("RestApiError", Option(e.getMessage))
         Left(error)
       }
@@ -47,35 +46,30 @@ object StreamConcat {
   }
 
 
-
-  private val commandQueue: Source[RawData, SourceQueueWithComplete[RawData]] =
-    Source.queue[RawData](bufferSize = 32768,
-      overflowStrategy = OverflowStrategy.backpressure)
-
-
-  val queue = commandQueue
-    .mapAsync(10)(r => {
-      getData(s"http://127.0.0.1:18090/rawData/${r.id}", r).map(
-        res => res match {
-          case Right(v) => {
-            v
-          }
-          case Left(error) => {
-            Seq(RawData("", ""))
-          }
-        })
-    })
-    .mapAsync(4)(r => {
-      Future {
-        Thread.sleep(2000)
-        println("r ===> " + r)
-        (r(0), r(0))
+  def next: Future[Seq[Item]] = {
+    _order = _order + 1
+    _cate = _cate.copy(order = _order)
+    getPurchaseData(_cate).map(r => {
+      r match {
+        case Right(v) => {
+          v
+        }
+        case Left(e) => Seq.empty
       }
     })
-    .toMat(Sink.ignore)(Keep.left)
-    .withAttributes(ActorAttributes.supervisionStrategy(DefaultExceptionDecider.decider))
-    .run
+  }
+}
 
+object StreamIteratorFlatMapConcatTest {
+
+  implicit val system = ActorSystem("StreamIteratorFlatMapConcatTest")
+  implicit val materializer = ActorMaterializer()
+  implicit val executionContext: ExecutionContextExecutor = system.getDispatcher
+
+  lazy val httpClient = HttpClient(system)
+  implicit val logger = LoggerFactory.getLogger(this.getClass.getName)
+
+  val parallelism: Int = 1
 
   private val userQueue: Source[UserPurchase, SourceQueueWithComplete[UserPurchase]] =
     Source.queue[UserPurchase](bufferSize = 32768,
@@ -110,31 +104,44 @@ object StreamConcat {
     .mapConcat(identity)
 
 
-  val resourceQueryDataFlow = Flow[(UserProfile, Category)]
-    .mapAsyncUnordered(10)(x => Future(x))
+
+
+  val resourceQueryDataFlow0 = Flow[(UserProfile, Category)]
+    .flatMapConcat{ message =>
+      val user = message._1
+      val cate = message._2
+      println("process ===> " + cate.id)
+      val queryExecutor = new OrderQueryExecutor(httpClient, user, cate)
+      Source.fromIterator(() => Iterator.continually(queryExecutor.next))
+        .mapAsync(1)(identity)
+        .takeWhile(r => {
+          r.size > 0
+        }, true)
+    }
     .async
-    .flatMapConcat(m => {
-    val cate = m._2
-    val fut = getPurchaseData(s"http://127.0.0.1:18090/purchase/${cate.id}", cate).map(
-      res => res match {
-        case Right(v) => {
-          v
-        }
-        case Left(error) => {
-          Seq(Item("", ""))
-        }
-      })
-    Source.future(fut)
-      .mapConcat(r => r)
-      .async
-  }).async
+    .mapConcat(identity)
+
+
+  val resourceQueryDataFlow = Flow[(UserProfile, Category)]
+    .flatMapMerge(16, { message =>
+      val user = message._1
+      val cate = message._2
+      println("process ===> " + cate.id)
+      val queryExecutor = new OrderQueryExecutor(httpClient, user, cate)
+      Source.fromIterator(() => Iterator.continually(queryExecutor.next))
+        .mapAsync(1)(identity)
+        .takeWhile(r => {
+          r.size > 0
+        }, true)
+    })
+    .async
+    .mapConcat(identity)
 
 
   val resourceQueryDataFlow1 = Flow[(UserProfile, Category)]
-    //.mapAsyncUnordered(parallelism)(x => Future(x))
-    //.async
     .mapAsyncUnordered(parallelism)(m => {
       val cate = m._2
+      println("process ===> " + cate.id)
       val fut = getPurchaseData(s"http://127.0.0.1:18090/purchase/${cate.id}", cate).map(
         res => res match {
           case Right(v) => {
@@ -148,16 +155,19 @@ object StreamConcat {
       fut
 
     }).async
+    //.buffer(16, OverflowStrategy.backpressure)
     .mapConcat(identity)
 
 
   val queue1 = userQueue
       .via(loadCategory)
-    .via(StreamHelper.balancer(resourceQueryDataFlow1, parallelism))
+    .via(StreamHelper.balancer(resourceQueryDataFlow, parallelism))
+    //.via(resourceQueryDataFlow1)
     .map(r => {
       println("item ===> " + r.itemName)
       r
     })
+    .async
     .toMat(Sink.ignore)(Keep.left)
     .withAttributes(ActorAttributes.supervisionStrategy(DefaultExceptionDecider.decider))
     .run
@@ -167,7 +177,7 @@ object StreamConcat {
   def sendUserPurchase(rawData: UserPurchase) = {
     queue1.offer(rawData).map {
       case QueueOfferResult.Enqueued => {
-        logger.info(s"[sendUserPurchase] enqueued.")
+        //logger.info(s"[sendUserPurchase] enqueued.")
       }
       case QueueOfferResult.Dropped => {
         logger.info(s"[sendUserPurchase] dropped.")
@@ -182,28 +192,10 @@ object StreamConcat {
   }
 
 
-  def sendData(rawData: RawData) = {
-    queue.offer(rawData).map {
-      case QueueOfferResult.Enqueued => {
-        //logger.info(s"[ElasticSearchTest] enqueued.")
-      }
-      case QueueOfferResult.Dropped => {
-        logger.info(s"[ElasticSearchTest] dropped.")
-      }
-      case QueueOfferResult.Failure(e) => {
-        logger.info(s"[ElasticSearchTest] failed.")
-      }
-      case QueueOfferResult.QueueClosed => {
-        logger.info(s"[ElasticSearchTest] closed.")
-      }
-    }
-  }
-
-
 
   def main(args: Array[String]): Unit = {
 
-    val count = 10
+    val count = 2
 
     val cates = Seq(
       Category("1", "cate1"),
@@ -214,6 +206,18 @@ object StreamConcat {
       Category("6", "cate6"),
       Category("7", "cate7"),
       Category("8", "cate8")
+    )
+
+    val cates2 = Seq(
+      Category("1", "cate1"),
+      Category("5", "cate5"),
+      Category("7", "cate7"),
+      Category("8", "cate8"),
+      Category("9", "cate9")
+    )
+
+    val cates1 = Seq(
+      Category("1", "cate1")
     )
 
     val users = Seq(
@@ -231,7 +235,7 @@ object StreamConcat {
 
     (0 to count - 1).map(x => {
       val i = x % 10
-      val up = UserPurchase(users(i), cates)
+      val up = UserPurchase(users(i), cates2)
       sendUserPurchase(up)
     })
 

@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: orchestrator
+  name: orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+        env: beta
+    spec:
+      serviceAccountName: orchestrator
+      containers:
+      - name: orchestrator
+        image: rocket:2.2
+        imagePullPolicy: IfNotPresent
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8558
+        livenessProbe:
+          tcpSocket:
+            port: 8558
+        env:
+        - name: SERVICE_ENV
+          value: "DEV"
+        - name: SERVICE_MODE
+          value: "test"
+        - name: APP_KEY
+          value: "rocket"
+        - name: SERVLET_CONTEXT_PATH
+          value: "/"
+        - name: KAFKA_NODES
+          value: ""
+        - name: ES_NODES
+          value: "http://127.0.0.1:9200"
+        - name: DATASOURCE_URL
+          value: "jdbc:mysql://127.0.0.1:3306/rocket?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatements=true&useSSL=false"
+        - name: DATASOURCE_USERNAME
+          value: "root"
+        - name: DATASOURCE_PASSWORD
+          value: "wyx1005"
+        ports:
+        - name: http
+          containerPort: 18090
+          protocol: TCP
+        - name: httpmanagement
+          containerPort: 8558
+          protocol: TCP
+---
+#public
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    appName: orchestrator
+  name: orchestrator
+spec:
+  selector:
+    app: orchestrator
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 18090
+  - name: httpmanagement
+    port: 8558
+    protocol: TCP
+    targetPort: 8558
+  sessionAffinity: None
+  type: ClusterIP
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: orchestrator
+rules:
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orchestrator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: orchestrator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: orchestrator
+subjects:
+- kind: ServiceAccount
+  name: orchestrator

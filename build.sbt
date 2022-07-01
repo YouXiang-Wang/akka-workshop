@@ -6,7 +6,7 @@ scalaVersion := "2.12.6"
 
 
 lazy val akkaVersion = "2.6.18"
-lazy val akkaHttpVersion = "10.1.11"
+lazy val akkaHttpVersion = "10.2.9"
 lazy val alpakkaVersion = "1.1.0"
 lazy val parasolVersion = "0.2.0-SNAPSHOT"
 lazy val akkaManagementVersion = "1.0.8"
@@ -21,6 +21,7 @@ lazy val prometheusVersion = "0.11.0"
 lazy val jmesPathVersion = "0.5.0"
 lazy val jacksonModuleScala = "2.13.0"
 lazy val mysqlConnectorVersion = "6.0.6"
+lazy val odelayVersion = "0.3.2"
 
 lazy val circeVersion = "0.14.1"
 
@@ -40,6 +41,7 @@ assemblyMergeStrategy in assembly := {
   case "akka/discovery/kubernetes/KubernetesApiServiceDiscovery.class" => MergeStrategy.first
   case "akka/discovery/kubernetes/KubernetesApiServiceDiscovery$.class" => MergeStrategy.first
   case "module-info.class" => MergeStrategy.discard
+  case "META-INF/versions/11/module-info.class" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -62,11 +64,11 @@ assemblyExcludedJars in assembly := {
 }
 
 //assemblyJarName in assembly := s"${name.value}_${scalaVersion.value.substring(0,4)}-${version.value}-assembly.jar"
-assemblyJarName in assembly := s"${name.value}_${scalaVersion.value.substring(0,4)}-assembly.jar"
+assemblyJarName in assembly := s"orchestrator-assembly.jar"
 
-mainClass in Compile := Some("tech.rocketim.im.server.RocketNode")
+mainClass in Compile := Some("tech.parasol.akka.workshop.cluster.ShardingApp")
 
-mainClass in assembly := Some("tech.rocketim.im.server.RocketNode")
+mainClass in assembly := Some("tech.parasol.akka.workshop.cluster.ShardingApp")
 
 
 javaAgents += "org.aspectj" % "aspectjweaver" % "1.9.7" % "runtime"
@@ -96,6 +98,8 @@ val kamon = Seq(
   "io.kamon" %% "kamon-bundle" % kamonVersion,
   "io.kamon" %% "kamon-prometheus" % kamonVersion
 )
+
+val odelay = "com.softwaremill.odelay"  %% "odelay-core" % odelayVersion
 
 val akkaManagement = Seq(
   "com.lightbend.akka.management" %% "akka-management" % akkaManagementVersion,
@@ -131,9 +135,11 @@ libraryDependencies ++= akkaManagement ++ circe ++ jmesPath ++ kontainers ++ mys
   "ch.megard"                                 %% "akka-http-cors"                % "0.4.2",
   "com.typesafe.akka"                         %% "akka-http-core"                % akkaHttpVersion,
   "com.typesafe.akka"                         %% "akka-http-jackson"             % akkaHttpVersion,
+  "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
   "com.typesafe.akka"                         %% "akka-stream-kafka"             % "2.0.4",
   "de.heikoseeberger"                         %% "akka-http-jackson"             % "1.27.0",
   reflectASM,
+  odelay,
   "net.debasishg" %% "redisclient" % "3.30",
   "com.twitter" %% "chill" % "0.9.4",
   "com.twitter" %% "chill-akka" % "0.9.4",
