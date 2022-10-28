@@ -4,14 +4,16 @@ package tech.parasol.akka.workshop.utils
 
 import java.lang.reflect.{ParameterizedType, Type}
 
+
+
+import java.lang.reflect.{ParameterizedType, Type}
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper, SerializationFeature}
 import com.fasterxml.jackson.module.scala.{DefaultScalaModule, ScalaObjectMapper}
-
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
+import scala.collection.JavaConverters._
 import scala.reflect.{ClassTag, _}
 import scala.util.{Failure, Success, Try}
 
@@ -133,8 +135,6 @@ object JsonUtil {
     s.asScala
   }
 
-
-
   def getInstance[T](json: String)(implicit ct: ClassTag[T]): T =
     Try {
       mapper.readValue(json, ct.runtimeClass).asInstanceOf[T]
@@ -163,7 +163,7 @@ object JsonUtil {
   }
 
   import scala.reflect.runtime.{universe => ru}
-  import ru.TypeTag
+  import ru.{Type, TypeTag}
 
 
   private def tagToType[T](implicit tag: scala.reflect.runtime.universe.TypeTag[T]): java.lang.reflect.Type = tag.mirror.runtimeClass(tag.tpe)
