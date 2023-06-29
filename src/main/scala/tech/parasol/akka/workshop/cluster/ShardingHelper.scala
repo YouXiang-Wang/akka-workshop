@@ -1,12 +1,12 @@
 package tech.parasol.akka.workshop.cluster
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import tech.parasol.akka.workshop.actor.JavaProfileActor
 
 object ShardingHelper {
 
-  def startShardingRegion(system: ActorSystem, role: String) = {
+  def startShardingRegion(system: ActorSystem, role: String): ActorRef = {
     ClusterSharding(system).start(
       typeName = role,
       entityProps = Props(classOf[JavaProfileActor]),
@@ -16,7 +16,7 @@ object ShardingHelper {
     )
   }
 
-  def startProfileShardingRegion(system: ActorSystem, role: String) = {
+  def startProfileShardingRegion(system: ActorSystem, role: String): ActorRef = {
     ClusterSharding(system).start(
       typeName = role,
       entityProps = Props(classOf[ProfileActor]),

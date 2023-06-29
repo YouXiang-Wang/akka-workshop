@@ -20,9 +20,9 @@ lazy val micrometerVersion = "1.7.2"
 lazy val prometheusVersion = "0.11.0"
 lazy val jmesPathVersion = "0.5.0"
 lazy val jacksonModuleScala = "2.13.0"
-lazy val mysqlConnectorVersion = "6.0.6"
+lazy val mysqlConnectorVersion = "8.0.15" //"8.0.29" //"6.0.6" 8.0.29
 lazy val odelayVersion = "0.3.2"
-
+lazy val hikariCPVer = "4.0.3"
 lazy val circeVersion = "0.14.1"
 
 lazy val reflectASM = "com.esotericsoftware" % "reflectasm" % "1.11.3"
@@ -114,8 +114,11 @@ val kontainers = Seq(
   "io.prometheus" % "simpleclient" % prometheusVersion,
   "io.prometheus" % "simpleclient_common" % prometheusVersion
 )
+val hikariCP = Seq(
+  "com.zaxxer" % "HikariCP" % hikariCPVer
+)
 
-libraryDependencies ++= akkaManagement ++ circe ++ jmesPath ++ kontainers ++ mysqlConnector ++ kamon ++ jna ++ Seq(
+libraryDependencies ++= akkaManagement ++ circe ++ hikariCP ++ jmesPath ++ kontainers ++ mysqlConnector ++ kamon ++ jna ++ Seq(
   "com.typesafe.akka"                         %% "akka-actor"                    % akkaVersion,
   //"com.typesafe.akka"                         %% "akka-actor-typed"                    % akkaVersion,
   "com.typesafe.akka"                         %% "akka-stream"                   % akkaVersion,

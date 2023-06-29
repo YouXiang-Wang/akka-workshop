@@ -2,18 +2,17 @@ package tech.parasol.akka.workshop.cluster
 
 import akka.actor.{ActorSystem, CoordinatedShutdown, Props}
 import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
+import akka.management.scaladsl.AkkaManagement
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
-import akka.management.scaladsl.AkkaManagement
-//import kamon.Kamon
 import tech.parasol.akka.workshop.route.Route
 import tech.parasol.akka.workshop.utils.CommonUtils
 
-object ShardingApp extends Route {
+object ClusterApp extends Route {
 
   val logger = LoggerFactory.getLogger(this.getClass.getName)
   val role = "demo"
+
   val clusterConfig =
     """
       |  akka.remote {
@@ -25,7 +24,7 @@ object ShardingApp extends Route {
       |
       |  akka.cluster {
       |    seed-nodes = [
-      |      "akka://ShardingApp@127.0.0.1:2661"
+      |      "akka://ClusterApp@127.0.0.1:2661"
       |    ]
       |
       |    // Needed to move the cluster-shard to another node
@@ -45,21 +44,28 @@ object ShardingApp extends Route {
     .withFallback(ConfigFactory.parseString(clusterConfig))
     .withFallback(ConfigFactory.load())
 
-  implicit val system = ActorSystem("ShardingApp", config)
+  implicit val system = ActorSystem("ClusterApp", config)
   implicit val executionContext = system.dispatcher
 
   Application.system = system
 
   def startCluster = {
     val bind = CommonUtils.availablePort(Seq(18090, 18091, 18092, 18093, 18094))
-    Http().bindAndHandle(router, "0.0.0.0", bind)
+    val host  = "0.0.0.0"
+
+    Http().newServerAt(interface = host, port = bind).bindFlow(router)
+      .foreach(_ => {
+        logger.info(s"ClusterApp Http service has been started at ${host}:${port}")
+      })
+
     AkkaManagement(system).start()
-    logger.info(s"ShardingApp starts up at ${bind}")
     Application.shardingRegion = ShardingHelper.startShardingRegion(system, "user")
+
     Application.profileShardingRegion = ShardingHelper.startProfileShardingRegion(system, "profile")
+
     system.actorOf(Props(classOf[ClusterMetricsActor]), "clusterMetricsActor")
     CoordinatedShutdown(system).addJvmShutdownHook {
-      logger.info(s"[ShardingApp] shutdown at ${System.currentTimeMillis()}")
+      logger.info(s"[ClusterApp] shutdown at ${System.currentTimeMillis()}")
     }
   }
 
@@ -86,7 +92,6 @@ object ShardingApp extends Route {
    */
 
   def main(args: Array[String]): Unit = {
-    //Kamon.init()
     startCluster
   }
 
